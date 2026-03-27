@@ -80,20 +80,15 @@ async function handleRoute(request, { params }) {
         }
       }));
 
-      jsonResponse.cookies.set('session', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/'
-      });
+      const secureFlag = process.env.NODE_ENV === 'production' ? 'Secure; ' : '';
+      jsonResponse.headers.append('Set-Cookie', `session=${token}; HttpOnly; ${secureFlag}SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}; Path=/`);
 
       return jsonResponse;
     }
 
     if (route === '/auth/logout' && method === 'POST') {
       const jsonResponse = handleCORS(NextResponse.json({ success: true }));
-      jsonResponse.cookies.delete('session');
+      jsonResponse.headers.append('Set-Cookie', `session=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`);
       return jsonResponse;
     }
 
