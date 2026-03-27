@@ -1,0 +1,123 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  username        String    @unique
+  password        String
+  role            String    @default("user") // "owner" or "user"
+  isActive        Boolean   @default(true)
+  subscriptionEnd DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  watchProgress   WatchProgress[]
+}
+
+model Category {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  slug        String      @unique
+  description String?
+  type        String      @default("all") // "all", "movies", "series", "channels"
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  mediaItems  MediaItem[]
+  channels    Channel[]
+}
+
+model MediaItem {
+  id           String    @id @default(uuid())
+  title        String
+  type         String    // "MOVIE", "EPISODE", "CHANNEL"
+  url          String    // file path or stream URL
+  thumbnail    String?
+  description  String?
+  categoryId   String?
+  playlistId   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // NEW FIELDS for series
+  season       Int?
+  episode      Int?
+  seriesId     String?
+  
+  category     Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  playlist     Playlist?         @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+  metadata     MovieMetadata?
+  watchProgress WatchProgress[]
+
+  // Self relation for series -> episodes
+  series       MediaItem?        @relation("SeriesEpisodes", fields: [seriesId], references: [id], onDelete: Cascade)
+  episodes     MediaItem[]       @relation("SeriesEpisodes")
+}
+
+model MovieMetadata {
+  id          String    @id @default(uuid())
+  mediaItemId String    @unique
+  tmdbId      Int?
+  imdbId      String?
+  title       String
+  overview    String?
+  poster      String?
+  backdrop    String?
+  releaseYear Int?
+  rating      Float?
+  genres      String?   // JSON string array
+  runtime     Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  mediaItem   MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+}
+
+model Playlist {
+  id          String    @id @default(uuid())
+  name        String
+  source      String    // URL or "uploaded"
+  type        String    @default("m3u") // "m3u", "m3u8"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  channels    Channel[]
+  mediaItems  MediaItem[]
+}
+
+model Channel {
+  id          String    @id @default(uuid())
+  name        String
+  logo        String?
+  url         String
+  groupTitle  String?
+  playlistId  String
+  categoryId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  playlist    Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+}
+
+model WatchProgress {
+  id          String    @id @default(uuid())
+  userId      String
+  mediaItemId String
+  progress    Float     @default(0) // percentage 0-100 or seconds
+  completed   Boolean   @default(false)
+  lastWatched DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaItem   MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, mediaItemId])
+}
