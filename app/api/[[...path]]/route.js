@@ -69,9 +69,9 @@ async function handleRoute(request, { params }) {
         }
       }
 
-      await setSession(user);
+      const token = await setSession(user);
 
-      return handleCORS(NextResponse.json({
+      const jsonResponse = handleCORS(NextResponse.json({
         user: {
           id: user.id,
           username: user.username,
@@ -79,11 +79,22 @@ async function handleRoute(request, { params }) {
           subscriptionEnd: user.subscriptionEnd
         }
       }));
+
+      jsonResponse.cookies.set('session', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/'
+      });
+
+      return jsonResponse;
     }
 
     if (route === '/auth/logout' && method === 'POST') {
-      await clearSession();
-      return handleCORS(NextResponse.json({ success: true }));
+      const jsonResponse = handleCORS(NextResponse.json({ success: true }));
+      jsonResponse.cookies.delete('session');
+      return jsonResponse;
     }
 
     if (route === '/auth/me' && method === 'GET') {
