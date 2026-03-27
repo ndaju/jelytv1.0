@@ -32,13 +32,13 @@ export default function LoginPage() {
 
       if (response.ok) {
         toast.success(t('loginButton') + ' ✓');
-        if (data.user.role === 'owner') {
-          router.push('/owner');
+        if (data.user?.role === 'owner') {
+          window.location.href = '/owner';
         } else {
-          router.push('/');
+          window.location.href = '/';
         }
       } else {
-        toast.error(t('loginError'));
+        toast.error(data.error || t('loginError'));
       }
     } catch (error) {
       toast.error(t('loginError'));
