@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, verifyPassword, setSession, clearSession } from '@/lib/auth';
 import { searchMedia, getMediaDetails, formatMetadata } from '@/lib/tmdb';
